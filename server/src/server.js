@@ -11,5 +11,5 @@ const server = http.createServer(app);
 setupWebSocket(server);
 
 server.listen(PORT, () => {
-  // Server running and listening on configured port
+  console.log("Server running on port", PORT);
 });

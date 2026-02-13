@@ -11,7 +11,11 @@ class WebSocketService {
   }
 
   connect(noteId, token, shareCode = null) {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN && this.noteId === noteId) {
+    if (
+      this.ws &&
+      this.ws.readyState === WebSocket.OPEN &&
+      this.noteId === noteId
+    ) {
       return;
     }
 
@@ -23,18 +27,32 @@ class WebSocketService {
     this.token = token;
     this.shareCode = shareCode;
 
-    const wsUrl = `ws://localhost:5000?token=${encodeURIComponent(token)}`;
+    // Dynamic WebSocket URL handling for production (Render)
+    let wsUrl;
+
+    if (import.meta.env.VITE_WS_URL) {
+      wsUrl = `${import.meta.env.VITE_WS_URL}?token=${encodeURIComponent(token)}`;
+    } else {
+      // Fallback to dynamic origin construction
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const host = window.location.host;
+      wsUrl = `${protocol}//${host}?token=${encodeURIComponent(token)}`;
+    }
+
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
       this.reconnectAttempts = 0;
+
       const joinMessage = {
         type: "join",
         noteId
       };
+
       if (shareCode) {
         joinMessage.shareCode = shareCode;
       }
+
       this.send(joinMessage);
     };
 
@@ -52,8 +70,12 @@ class WebSocketService {
     this.ws.onclose = (event) => {
       this.ws = null;
 
-      if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+      if (
+        event.code !== 1000 &&
+        this.reconnectAttempts < this.maxReconnectAttempts
+      ) {
         this.reconnectAttempts++;
+
         setTimeout(() => {
           if (this.noteId && this.token) {
             this.connect(this.noteId, this.token, this.shareCode);
@@ -75,9 +97,11 @@ class WebSocketService {
           });
         } catch (_) { }
       }
+
       this.ws.close(1000, "Client disconnecting");
       this.ws = null;
     }
+
     this.noteId = null;
     this.token = null;
     this.shareCode = null;
@@ -118,6 +142,7 @@ class WebSocketService {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
+
     this.listeners.get(event).push(callback);
   }
 
@@ -125,6 +150,7 @@ class WebSocketService {
     if (this.listeners.has(event)) {
       const callbacks = this.listeners.get(event);
       const index = callbacks.indexOf(callback);
+
       if (index > -1) {
         callbacks.splice(index, 1);
       }
@@ -152,4 +178,3 @@ class WebSocketService {
 }
 
 export default new WebSocketService();
-

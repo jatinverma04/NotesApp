@@ -28,14 +28,10 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         const { data } = await api.post("/auth/login", { email, password });
+        // Hardening: Ensure we overwrite any old token
+        localStorage.removeItem("token");
         localStorage.setItem("token", data.token);
-        // We need to fetch user details if login response doesn't have them, 
-        // or usage assumes we have them. 
-        // LoginForm used /auth/login. AuthContext used /users/login (wrong).
-        // Let's assume /auth/login returns { token, user }?
-        // If not, we might need to fetch /users/me.
-        // Step 840 AuthContext.login tried `setUser(data.user)`.
-        // Let's assume data.user exists or fetch me.
+
         if (data.user) {
             setUser(data.user);
         } else {
@@ -47,9 +43,10 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (name, email, password) => {
         const { data } = await api.post("/auth/register", { name, email, password });
+        // Hardening: Ensure we overwrite any old token
+        localStorage.removeItem("token");
         localStorage.setItem("token", data.token);
-        // Assume register returns token and user? 
-        // If not, fetch me.
+
         if (data.user) {
             setUser(data.user);
         } else {
