@@ -172,7 +172,8 @@ const deleteNote = async (req, res) => {
     const userId = req.user.userId;
 
     const note = await prisma.note.findFirst({
-      where: { id, userId }
+      where: { id, userId },
+      select: { id: true }
     });
 
     if (!note) {
@@ -412,7 +413,8 @@ const addCollaborator = async (req, res) => {
       where: {
         id,
         userId: ownerId
-      }
+      },
+      select: { id: true }
     });
 
     if (!note) {
@@ -578,14 +580,18 @@ const updateNoteForCollaborator = async (req, res) => {
           noteId: id,
           userId
         }
-      }
+      },
+      select: { id: true, permission: true }
     });
 
     if (!collaborator || collaborator.permission !== "edit") {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    const note = await prisma.note.findUnique({ where: { id } });
+    const note = await prisma.note.findUnique({
+      where: { id },
+      select: { title: true, content: true, version: true }
+    });
 
     if (!note) {
       return res.status(404).json({ message: "Note not found" });
@@ -597,6 +603,12 @@ const updateNoteForCollaborator = async (req, res) => {
         title: title !== undefined ? title : note.title,
         content: content !== undefined ? content : note.content,
         version: { increment: 1 }
+      },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        version: true
       }
     });
 
@@ -622,7 +634,8 @@ const getNoteForCollaborator = async (req, res) => {
           noteId: id,
           userId
         }
-      }
+      },
+      select: { id: true }
     });
 
     if (!collaborator) {
